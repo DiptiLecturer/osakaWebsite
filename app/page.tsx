@@ -2,6 +2,7 @@ import Navbar from '@/components/Navbar'
 import HeroCarousel from '@/components/HeroCarousel'
 import Footer from '@/components/Footer'
 import TVCard from '@/components/TVCard'
+import SocialLinks from '@/components/SocialLinks'
 
 export default function Home() {
   return (
@@ -230,6 +231,7 @@ export default function Home() {
       </main>
 
       <Footer />
+            <SocialLinks />
     </div>
   )
 }
