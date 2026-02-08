@@ -1,0 +1,27 @@
+interface TVCardProps {
+  name: string
+  price: string
+  image: string
+}
+
+export default function TVCard({ name, price, image }: TVCardProps) {
+  return (
+    <div className="border border-gray-300 rounded-lg overflow-hidden hover:shadow-2xl transition-all duration-300 bg-white">
+      {/* TV Image */}
+      <div className="bg-gray-100 h-48 flex items-center justify-center p-4">
+        <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center">
+          <p className="text-gray-400 text-sm">{name} Image</p>
+        </div>
+      </div>
+      
+      {/* TV Details */}
+      <div className="p-6 text-center">
+        <h4 className="font-bold text-lg mb-3 text-gray-800">{name}</h4>
+        <p className="text-3xl text-red-600 font-bold mb-4">{price}</p>
+        <button className="w-full bg-black hover:bg-red-600 text-white px-6 py-2 rounded-lg font-semibold transition">
+          View Details
+        </button>
+      </div>
+    </div>
+  )
+}
