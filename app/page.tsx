@@ -1,10 +1,51 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import Navbar from '@/components/Navbar'
 import HeroCarousel from '@/components/HeroCarousel'
 import Footer from '@/components/Footer'
 import TVCard from '@/components/TVCard'
 import SocialLinks from '@/components/SocialLinks'
+import { supabase } from '@/lib/supabase'
+
+interface Product {
+  id: string
+  name: string
+  category: string
+  size: string
+  price: number
+  description: string
+  image_url: string | null
+  is_active: boolean
+}
 
 export default function Home() {
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchProducts()
+  }, [])
+
+  const fetchProducts = async () => {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('is_active', true)
+      .order('category', { ascending: true })
+    
+    if (error) {
+      console.error('Error fetching products:', error)
+    } else {
+      setProducts(data || [])
+    }
+    setLoading(false)
+  }
+
+  const getProductsByCategory = (category: string) => {
+    return products.filter(p => p.category === category)
+  }
+
   return (
     <div className="min-h-screen">
       <Navbar />
@@ -69,72 +110,115 @@ export default function Home() {
           </div>
         </section>
 
-        {/* CATEGORY SECTION */}
+{/* CATEGORY SECTION */}
         <section id="category" className="py-20 bg-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-5xl font-bold text-center mb-16">
               Our <span className="text-red-600">Categories</span>
             </h2>
 
-            <div className="space-y-16">
-              {/* 24 inch */}
-              <div>
-                <h3 className="text-4xl font-bold mb-8 text-center">
-                  <span className="text-red-600">24 inch</span> Televisions
-                </h3>
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-                  <TVCard name="Basic Frameless" price="৳ 12,000" image="/24-basic-frameless.jpg" />
-                  <TVCard name="Basic Double Glass" price="৳ 13,500" image="/24-basic-double.jpg" />
-                  <TVCard name="Smart Frameless" price="৳ 15,000" image="/24-smart-frameless.jpg" />
-                  <TVCard name="Smart Double Glass" price="৳ 16,500" image="/24-smart-double.jpg" />
-                </div>
+            {loading ? (
+              <div className="text-center py-20">
+                <p className="text-2xl text-gray-600">Loading products...</p>
               </div>
+            ) : (
+              <div className="space-y-16">
+                {/* 24 inch */}
+                {getProductsByCategory('24 inch').length > 0 && (
+                  <div>
+                    <h3 className="text-4xl font-bold mb-8 text-center">
+                      <span className="text-red-600">24 inch</span> Televisions
+                    </h3>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                      {getProductsByCategory('24 inch').map((product) => (
+                        <TVCard
+                          key={product.id}
+                          name={product.name}
+                          price={`৳ ${product.price.toLocaleString()}`}
+                          image={product.image_url || ''}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-              {/* 32 inch */}
-              <div>
-                <h3 className="text-4xl font-bold mb-8 text-center">
-                  <span className="text-red-600">32 inch</span> Televisions
-                </h3>
-                <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                  <TVCard name="Regular Series" price="৳ 18,000" image="/32-regular.jpg" />
-                  <TVCard name="Gold Series" price="৳ 21,000" image="/32-gold.jpg" />
-                </div>
-              </div>
+                {/* 32 inch */}
+                {getProductsByCategory('32 inch').length > 0 && (
+                  <div>
+                    <h3 className="text-4xl font-bold mb-8 text-center">
+                      <span className="text-red-600">32 inch</span> Televisions
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                      {getProductsByCategory('32 inch').map((product) => (
+                        <TVCard
+                          key={product.id}
+                          name={product.name}
+                          price={`৳ ${product.price.toLocaleString()}`}
+                          image={product.image_url || ''}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-              {/* 43 inch */}
-              <div>
-                <h3 className="text-4xl font-bold mb-8 text-center">
-                  <span className="text-red-600">43 inch</span> Televisions
-                </h3>
-                <div className="grid md:grid-cols-3 gap-8">
-                  <TVCard name="Regular Series" price="৳ 28,000" image="/43-regular.jpg" />
-                  <TVCard name="Gold Series" price="৳ 32,000" image="/43-gold.jpg" />
-                  <TVCard name="Google TV" price="৳ 35,000" image="/43-google.jpg" />
-                </div>
-              </div>
+                {/* 43 inch */}
+                {getProductsByCategory('43 inch').length > 0 && (
+                  <div>
+                    <h3 className="text-4xl font-bold mb-8 text-center">
+                      <span className="text-red-600">43 inch</span> Televisions
+                    </h3>
+                    <div className="grid md:grid-cols-3 gap-8">
+                      {getProductsByCategory('43 inch').map((product) => (
+                        <TVCard
+                          key={product.id}
+                          name={product.name}
+                          price={`৳ ${product.price.toLocaleString()}`}
+                          image={product.image_url || ''}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-              {/* 50 inch */}
-              <div>
-                <h3 className="text-4xl font-bold mb-8 text-center">
-                  <span className="text-red-600">50 inch</span> Televisions
-                </h3>
-                <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                  <TVCard name="Regular Series" price="৳ 38,000" image="/50-regular.jpg" />
-                  <TVCard name="Gold Series" price="৳ 42,000" image="/50-gold.jpg" />
-                </div>
-              </div>
+                {/* 50 inch */}
+                {getProductsByCategory('50 inch').length > 0 && (
+                  <div>
+                    <h3 className="text-4xl font-bold mb-8 text-center">
+                      <span className="text-red-600">50 inch</span> Televisions
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                      {getProductsByCategory('50 inch').map((product) => (
+                        <TVCard
+                          key={product.id}
+                          name={product.name}
+                          price={`৳ ${product.price.toLocaleString()}`}
+                          image={product.image_url || ''}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-              {/* 65 inch */}
-              <div>
-                <h3 className="text-4xl font-bold mb-8 text-center">
-                  <span className="text-red-600">65 inch</span> Televisions
-                </h3>
-                <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                  <TVCard name="Regular Series" price="৳ 65,000" image="/65-regular.jpg" />
-                  <TVCard name="Gold Series" price="৳ 72,000" image="/65-gold.jpg" />
-                </div>
+                {/* 65 inch */}
+                {getProductsByCategory('65 inch').length > 0 && (
+                  <div>
+                    <h3 className="text-4xl font-bold mb-8 text-center">
+                      <span className="text-red-600">65 inch</span> Televisions
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                      {getProductsByCategory('65 inch').map((product) => (
+                        <TVCard
+                          key={product.id}
+                          name={product.name}
+                          price={`৳ ${product.price.toLocaleString()}`}
+                          image={product.image_url || ''}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
           </div>
         </section>
 
