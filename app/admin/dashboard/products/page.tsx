@@ -3,22 +3,56 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Edit2, Trash2, Tv, Package, ShieldCheck, ShieldAlert, Plus } from 'lucide-react'
+
+// --- 1. Dropdown Mapping Configuration ---
+const PRODUCT_MAPPING = {
+  "24 inch": {
+    size: "24\"",
+    models: ["Basic Frameless", "Basic Double Glass", "Smart Frameless", "Smart Double Glass"]
+  },
+  "32 inch": {
+    size: "32\"",
+    models: ["Regular Series", "Gold Series"]
+  },
+  "43 inch": {
+    size: "43\"",
+    models: ["Regular Series", "Gold Series", "Google TV"]
+  },
+  "50 inch": {
+    size: "50\"",
+    models: ["4K Ultra HD", "Gold Series", "Google TV"]
+  },
+  "65 inch": {
+    size: "65\"",
+    models: ["4K Ultra HD", "Premium Curved", "Google TV"]
+  }
+}
+
+type CategoryKey = keyof typeof PRODUCT_MAPPING;
 
 interface Product {
-  id: string
-  name: string
-  category: string
-  size: string
-  price: number
-  description: string
-  image_url: string | null
-  is_active: boolean
+  id: string;
+  name: string;
+  category: string;
+  size: string;
+  price: number;
+  description: string;
+  image_url: string | null;
+  is_active: boolean;
 }
 
 export default function ProductsPage() {
@@ -26,11 +60,12 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true)
   const [editDialog, setEditDialog] = useState(false)
   const [deleteDialog, setDeleteDialog] = useState(false)
-  const [addDialog, setAddDialog] = useState(false) // Added Add State
+  const [addDialog, setAddDialog] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+
   const [formData, setFormData] = useState({
     name: '',
-    category: '',
+    category: '' as CategoryKey | '',
     size: '',
     price: 0,
     description: ''
@@ -46,102 +81,18 @@ export default function ProductsPage() {
       .select('*')
       .order('category', { ascending: true })
 
-    if (error) {
-      console.error('Error fetching products:', error)
-    } else {
-      setProducts(data || [])
-    }
+    if (error) console.error('Error fetching products:', error)
+    else setProducts(data || [])
     setLoading(false)
   }
 
-  const toggleActive = async (id: string, currentStatus: boolean) => {
-    const { error } = await supabase
-      .from('products')
-      .update({ is_active: !currentStatus })
-      .eq('id', id)
-
-    if (!error) {
-      fetchProducts()
-    }
-  }
-
-  const openEditDialog = (product: Product) => {
-    setSelectedProduct(product)
+  const handleCategoryChange = (value: CategoryKey) => {
     setFormData({
-      name: product.name,
-      category: product.category,
-      size: product.size,
-      price: product.price,
-      description: product.description || ''
+      ...formData,
+      category: value,
+      size: PRODUCT_MAPPING[value].size,
+      name: ''
     })
-    setEditDialog(true)
-  }
-
-  const handleEdit = async () => {
-    if (!selectedProduct) return
-
-    const { error } = await supabase
-      .from('products')
-      .update({
-        name: formData.name,
-        category: formData.category,
-        size: formData.size,
-        price: formData.price,
-        description: formData.description,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', selectedProduct.id)
-
-    if (!error) {
-      setEditDialog(false)
-      fetchProducts()
-    } else {
-      alert('Error updating product')
-    }
-  }
-
-  const openDeleteDialog = (product: Product) => {
-    setSelectedProduct(product)
-    setDeleteDialog(true)
-  }
-
-  const handleDelete = async () => {
-    if (!selectedProduct) return
-
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', selectedProduct.id)
-
-    if (!error) {
-      setDeleteDialog(false)
-      setSelectedProduct(null)
-      fetchProducts()
-    } else {
-      alert('Error deleting product')
-    }
-  }
-
-  // --- New Add Functions ---
-  const handleAdd = async () => {
-    const { error } = await supabase
-      .from('products')
-      .insert([{
-        name: formData.name,
-        category: formData.category,
-        size: formData.size,
-        price: formData.price,
-        description: formData.description,
-        is_active: true
-      }])
-
-    if (!error) {
-      setAddDialog(false)
-      setFormData({ name: '', category: '', size: '', price: 0, description: '' })
-      fetchProducts()
-    } else {
-      alert('Error adding product')
-    }
   }
 
   const openAddDialog = () => {
@@ -149,122 +100,287 @@ export default function ProductsPage() {
     setAddDialog(true)
   }
 
+  const openEditDialog = (product: Product) => {
+    setSelectedProduct(product)
+    setFormData({
+      name: product.name,
+      category: product.category as CategoryKey,
+      size: product.size,
+      price: product.price,
+      description: product.description || ''
+    })
+    setEditDialog(true)
+  }
+
+  const handleAdd = async () => {
+    const { error } = await supabase.from('products').insert([{ ...formData, is_active: true }])
+    if (!error) {
+      setAddDialog(false)
+      fetchProducts()
+    } else alert('Error adding product')
+  }
+
+  const handleEdit = async () => {
+    if (!selectedProduct) return
+    const { error } = await supabase
+      .from('products')
+      .update({ ...formData })
+      .eq('id', selectedProduct.id)
+
+    if (!error) {
+      setEditDialog(false)
+      fetchProducts()
+    } else alert('Error updating product')
+  }
+
+  const handleDelete = async () => {
+    if (!selectedProduct) return
+    const { error } = await supabase.from('products').delete().eq('id', selectedProduct.id)
+    if (!error) {
+      setDeleteDialog(false)
+      fetchProducts()
+    }
+  }
+
+  const toggleActive = async (id: string, currentStatus: boolean) => {
+    await supabase.from('products').update({ is_active: !currentStatus }).eq('id', id)
+    fetchProducts()
+  }
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-red-600 border-r-transparent mb-4"></div>
-          <p className="text-gray-600 text-lg">Loading products...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin h-12 w-12 border-4 border-red-600 border-r-transparent rounded-full" />
       </div>
     )
   }
 
   return (
-    <div>
-      {/* Header */}
-      <div className="bg-gradient-to-r from-black to-red-900 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-8 mb-8 rounded-lg">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-2">
-              Products Management
-            </h1>
-            <p className="text-gray-300">Manage your TV inventory</p>
-          </div>
-          <Button 
-            className="bg-white text-red-600 hover:bg-gray-100 font-semibold"
-            onClick={openAddDialog}
-          >
-            <span className="text-xl mr-2">+</span> Add New Product
-          </Button>
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-black via-red-950 to-red-900 px-8 py-10 mb-8 rounded-2xl shadow-xl flex flex-col md:flex-row justify-between items-center gap-6">
+        <div>
+          <h1 className="text-4xl font-extrabold text-white tracking-tight">Products Management</h1>
+          <p className="text-red-200 mt-2 font-medium">Add, update, and manage your TV inventory</p>
+        </div>
+        <Button
+          onClick={openAddDialog}
+          className="bg-white text-red-700 hover:bg-gray-100 font-bold px-8 py-6 h-auto text-lg rounded-xl shadow-lg transition-transform active:scale-95"
+        >
+          <Plus className="mr-2 h-6 w-6" /> Add New Product
+        </Button>
+      </div>
+
+      {/* Stats Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <Card className="border-l-4 border-l-black overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-bold text-gray-500 uppercase tracking-wider">Total Inventory</CardTitle>
+            <Package className="h-5 w-5 text-gray-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black">{products.length}</div>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-green-500 overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-bold text-gray-500 uppercase tracking-wider">Active Online</CardTitle>
+            <ShieldCheck className="h-5 w-5 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black text-green-600">{products.filter(p => p.is_active).length}</div>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-red-500 overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-bold text-gray-500 uppercase tracking-wider">Out of Stock</CardTitle>
+            <ShieldAlert className="h-5 w-5 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black text-red-600">{products.filter(p => !p.is_active).length}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Table */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50/50 border-b border-gray-200">
+                <th className="p-5 font-bold text-gray-600">Product Details</th>
+                <th className="p-5 font-bold text-gray-600">Category & Size</th>
+                <th className="p-5 font-bold text-gray-600">Price</th>
+                <th className="p-5 font-bold text-gray-600">Active Status</th>
+                <th className="p-5 font-bold text-gray-600 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map((product) => (
+                <tr key={product.id} className="border-b border-gray-100 hover:bg-red-50/30 transition-colors">
+                  <td className="p-5">
+                    <div className="font-bold text-gray-900 text-lg">{product.name}</div>
+                    <div className="text-sm text-gray-500 line-clamp-1">{product.description}</div>
+                  </td>
+                  <td className="p-5">
+                    <div className="flex gap-2">
+                      <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold uppercase tracking-tighter">
+                        {product.category}
+                      </span>
+                      <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold">
+                        {product.size}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="p-5 font-mono font-bold text-red-700 text-lg">
+                    ৳{product.price.toLocaleString()}
+                  </td>
+                  <td className="p-5">
+                    <Switch
+                      checked={product.is_active}
+                      onCheckedChange={() => toggleActive(product.id, product.is_active)}
+                      className="data-[state=checked]:bg-green-500"
+                    />
+                  </td>
+                  <td className="p-5 text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="icon" onClick={() => openEditDialog(product)} className="text-blue-600 hover:bg-blue-50 hover:text-blue-700 rounded-full">
+                        <Edit2 className="h-5 w-5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => { setSelectedProduct(product); setDeleteDialog(true); }} className="text-red-600 hover:bg-red-50 hover:text-red-700 rounded-full">
+                        <Trash2 className="h-5 w-5" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* Stats Cards Section (Omitted for brevity, keep your original) */}
-      {/* ... (Total/Active/Inactive cards code) ... */}
+      {/* Add/Edit Product Dialog */}
+      <Dialog open={addDialog || editDialog} onOpenChange={(open) => { if (!open) { setAddDialog(false); setEditDialog(false); } }}>
+        <DialogContent className="max-w-3xl bg-white p-0 overflow-hidden border-none shadow-2xl">
+          <div className="bg-gradient-to-r from-black to-red-900 p-8">
+            <DialogTitle className="text-3xl font-black text-white">
+              {addDialog ? "Create New Listing" : "Update Product Info"}
+            </DialogTitle>
+            <DialogDescription className="text-red-200 text-lg mt-1">
+              Select product category and model specifications
+            </DialogDescription>
+          </div>
 
-      {/* Products Table Section (Omitted for brevity, keep your original) */}
-      {/* ... (Table code with Edit/Delete buttons) ... */}
+          <div className="p-8 space-y-8">
+            {/* Step 1: Side-by-Side Dropdowns */}
+            <div className="grid grid-cols-1  md:grid-cols-2 gap-8 p-6 bg-gray-50 rounded-2xl border border-gray-100">
+              <div className="space-y-3">
+                <Label className="text-xs font-black text-red-800 uppercase tracking-widest">1. Select Category</Label>
+                <Select onValueChange={handleCategoryChange} value={formData.category}>
+                  <SelectTrigger className="h-14 bg-white border-2 border-gray-200 text-lg font-medium focus:ring-red-500">
+                    <SelectValue placeholder="e.g. 32 inch" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white opacity-100 shadow-2xl border border-gray-200 z-[100]">
+                    {Object.keys(PRODUCT_MAPPING).map((cat) => (
+                      <SelectItem key={cat} value={cat} className="text-lg py-3">{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-      {/* Edit Dialog (Keep your current Edit dialog) */}
-      <Dialog open={editDialog} onOpenChange={setEditDialog}>
-        {/* ... (Your Edit dialog content) ... */}
-      </Dialog>
+              <div className="space-y-3">
+                <Label className="text-xs font-black text-red-800 uppercase tracking-widest">2. Choose Model</Label>
+                <Select
+                  onValueChange={(val) => setFormData({ ...formData, name: val })}
+                  value={formData.name}
+                  disabled={!formData.category}
+                >
+                  {/* ADD bg-white HERE */}
+                  <SelectTrigger className={`h-14 bg-white opacity-100 border-2 text-lg font-medium transition-all ${formData.category ? 'border-red-200 ring-2 ring-red-50' : 'border-gray-100 opacity-60'}`}>
+                    <SelectValue placeholder={formData.category ? "Select Model" : "← Pick size first"} />
+                  </SelectTrigger>
 
-      {/* Delete Confirmation Dialog (Keep your current Delete dialog) */}
-      <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>
-        {/* ... (Your Delete dialog content) ... */}
-      </Dialog>
-
-      {/* Add Product Dialog */}
-      <Dialog open={addDialog} onOpenChange={setAddDialog}>
-        <DialogContent className="max-w-2xl bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-red-600">Add New Product</DialogTitle>
-            <DialogDescription>Add a new TV to your inventory</DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="add-name" className="text-right font-semibold">Name</Label>
-              <Input
-                id="add-name"
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-                className="col-span-3"
-                placeholder="e.g., Smart Frameless"
-              />
+                  {/* ALSO ensure the Content has bg-white */}
+                  <SelectContent className="bg-white opacity-100 border border-gray-200 shadow-2xl z-[100]">
+                    {formData.category && PRODUCT_MAPPING[formData.category as CategoryKey].models.map((model) => (
+                      <SelectItem key={model} value={model} className="text-lg py-3 hover:bg-gray-100 focus:bg-gray-100">
+                        {model}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="add-category" className="text-right font-semibold">Category</Label>
-              <Input
-                id="add-category"
-                value={formData.category}
-                onChange={(e) => setFormData({...formData, category: e.target.value})}
-                className="col-span-3"
-                placeholder="e.g., 24 inch, 32 inch"
-              />
+            {/* Step 2: Details */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <Label className="text-sm font-bold text-gray-700">Price (৳)</Label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">৳</span>
+                  <Input
+                    type="number"
+                    step="1000"
+                    value={formData.price || ''}
+                    onChange={(e) => setFormData({ ...formData, price: parseInt(e.target.value) || 0 })}
+                    className="h-12 pl-8 border-2 text-lg"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+              <div className="space-y-3">
+                <Label className="text-sm font-bold text-gray-700">Screen Size (Auto)</Label>
+                <Input
+                  value={formData.size}
+                  readOnly
+                  className="h-12 bg-gray-50 border-2 border-dashed border-gray-200 text-gray-500 font-bold text-lg"
+                  placeholder='Based on category'
+                />
+              </div>
             </div>
 
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="add-size" className="text-right font-semibold">Size</Label>
-              <Input
-                id="add-size"
-                value={formData.size}
-                onChange={(e) => setFormData({...formData, size: e.target.value})}
-                className="col-span-3"
-                placeholder='e.g., 24", 32"'
-              />
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="add-price" className="text-right font-semibold">Price (৳)</Label>
-              <Input
-                id="add-price"
-                type="number"
-                step="1000"
-                value={formData.price || ''}
-                onChange={(e) => setFormData({...formData, price: parseInt(e.target.value) || 0})}
-                className="col-span-3"
-              />
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="add-description" className="text-right font-semibold">Description</Label>
+            <div className="space-y-3">
+              <Label className="text-sm font-bold text-gray-700">Product Description</Label>
               <Textarea
-                id="add-description"
                 value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
-                className="col-span-3"
-                rows={3}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows={4}
+                className="resize-none border-2 text-base p-4"
+                placeholder="Briefly describe features (e.g. 4K, Android 11, Voice Control...)"
               />
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddDialog(false)}>Cancel</Button>
-            <Button className="bg-red-600 hover:bg-red-700" onClick={handleAdd}>Add Product</Button>
+          <DialogFooter className="p-8 bg-gray-50 border-t flex flex-col sm:flex-row gap-4">
+            <Button
+              variant="outline"
+              onClick={() => { setAddDialog(false); setEditDialog(false); }}
+              className="px-10 h-14 font-bold border-2 hover:bg-white rounded-xl flex-1 sm:flex-none"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={addDialog ? handleAdd : handleEdit}
+              className="bg-red-700 hover:bg-red-800 text-white px-12 h-14 font-black text-lg shadow-lg rounded-xl flex-1 sm:flex-none"
+            >
+              {addDialog ? "Save & Publish" : "Apply Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>
+        <DialogContent className="bg-white rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-gray-900">Delete Product?</DialogTitle>
+            <DialogDescription className="py-4 text-gray-600 text-base">
+              This will permanently remove <span className="font-bold text-red-600">"{selectedProduct?.name}"</span> from your database. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-3">
+            <Button variant="outline" onClick={() => setDeleteDialog(false)} className="rounded-lg h-12 px-6">Keep Product</Button>
+            <Button variant="destructive" onClick={handleDelete} className="bg-red-600 hover:bg-red-700 rounded-lg h-12 px-6 font-bold">Yes, Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
