@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Image from 'next/image' // Recommended for Next.js
+import Link from 'next/link' // Import Link for internal navigation
 
 export default function HeroCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -9,17 +9,17 @@ export default function HeroCarousel() {
   const slides = [
     {
       title: "Welcome to OSAKA Television",
-      description: "Experience the best in visual entertainment",
+      description: "Experience the best in visual entertainment across Bangladesh.",
       image: "/hero1.jpg"
     },
     {
       title: "Premium Quality TVs",
-      description: "From 24 to 65 - Find your perfect size",
+      description: "From 24 to 65 - Find the perfect size for your home.",
       image: "/hero2.jpg"
     },
     {
       title: "Smart TV Technology",
-      description: "Google TV and Smart features available",
+      description: "Google TV and Smart features available with 4K resolution.",
       image: "/hero3.jpg"
     }
   ]
@@ -33,7 +33,7 @@ export default function HeroCarousel() {
   }, [slides.length])
 
   return (
-    <div className="relative h-[500px] bg-black overflow-hidden">
+    <div className="relative h-[600px] bg-black overflow-hidden">
       {slides.map((slide, index) => (
         <div
           key={index}
@@ -43,8 +43,7 @@ export default function HeroCarousel() {
         >
           {/* Background Image Overlay */}
           <div className="absolute inset-0 z-0">
-            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent z-10" />
-            {/* Replace with <img src={slide.image} ... /> if not using Next.js Image */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/50 to-transparent z-10" />
             <img
               src={slide.image}
               alt={slide.title}
@@ -53,35 +52,37 @@ export default function HeroCarousel() {
           </div>
 
           {/* Content */}
-          <div className="relative z-20 flex items-center h-full px-8 md:px-16">
+          <div className="relative z-20 flex items-center h-full px-8 md:px-16 lg:px-24">
             <div className="max-w-2xl">
-              <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
-                {slide.title}
+              <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
+                {slide.title.split('OSAKA')[0]} 
+                <span className="text-red-600">OSAKA</span> 
+                {slide.title.split('OSAKA')[1]}
               </h1>
-              <p className="text-xl md:text-2xl text-gray-300 mb-8">
+              <p className="text-xl md:text-2xl text-gray-200 mb-10">
                 {slide.description}
               </p>
               
-              {/* FIXED: Added missing opening tag */}
-              <a
-                href="/category"
-                className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg text-lg font-semibold transition inline-block"
+              {/* UPDATED: Navigates to #category on the same page */}
+              <Link
+                href="#category"
+                className="bg-red-600 hover:bg-red-700 text-white px-10 py-4 rounded-lg text-lg font-bold transition-all duration-300 transform hover:scale-105 inline-block shadow-lg"
               >
-                View Products
-              </a>
+                View Product List
+              </Link>
             </div>
           </div>
         </div>
       ))}
 
       {/* Dots Indicator */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-2 z-30">
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-3 z-30">
         {slides.map((_, index) => (
           <button
             key={index}
             onClick={() => setCurrentSlide(index)}
-            className={`w-3 h-3 rounded-full transition ${
-              index === currentSlide ? 'bg-red-600' : 'bg-gray-400'
+            className={`w-3 h-3 rounded-full transition-all duration-300 ${
+              index === currentSlide ? 'bg-red-600 w-8' : 'bg-white/50'
             }`}
             aria-label={`Go to slide ${index + 1}`}
           />

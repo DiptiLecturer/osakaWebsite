@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { toast } from "sonner"
 import {
   Select,
   SelectContent,
@@ -16,30 +17,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Edit2, Trash2, Tv, Package, ShieldCheck, ShieldAlert, Plus } from 'lucide-react'
+import { Edit2, Trash2, Package, ShieldCheck, ShieldAlert, Plus } from 'lucide-react'
 
-// --- 1. Dropdown Mapping Configuration ---
 const PRODUCT_MAPPING = {
-  "24 inch": {
-    size: "24\"",
-    models: ["Basic Frameless", "Basic Double Glass", "Smart Frameless", "Smart Double Glass"]
-  },
-  "32 inch": {
-    size: "32\"",
-    models: ["Regular Series", "Gold Series"]
-  },
-  "43 inch": {
-    size: "43\"",
-    models: ["Regular Series", "Gold Series", "Google TV"]
-  },
-  "50 inch": {
-    size: "50\"",
-    models: ["4K Ultra HD", "Gold Series", "Google TV"]
-  },
-  "65 inch": {
-    size: "65\"",
-    models: ["4K Ultra HD", "Premium Curved", "Google TV"]
-  }
+  "24 inch": { size: "24\"", models: ["Basic Frameless", "Basic Double Glass", "Smart Frameless", "Smart Double Glass"] },
+  "32 inch": { size: "32\"", models: ["Regular Series", "Gold Series", "Google TV"] },
+  "43 inch": { size: "43\"", models: ["Regular Series", "Gold Series", "Google TV"] },
+  "50 inch": { size: "50\"", models: ["Regular Series", "Gold Series", "Google TV"] },
+  "65 inch": { size: "65\"", models: ["Regular Series", "Gold Series", "Google TV"] }
 }
 
 type CategoryKey = keyof typeof PRODUCT_MAPPING;
@@ -81,9 +66,16 @@ export default function ProductsPage() {
       .select('*')
       .order('category', { ascending: true })
 
-    if (error) console.error('Error fetching products:', error)
+    if (error) toast.error("Failed to load inventory")
     else setProducts(data || [])
     setLoading(false)
+  }
+
+  const validateForm = () => {
+    if (!formData.category) { toast.error("Please select a size category"); return false; }
+    if (!formData.name) { toast.error("Please select a model name"); return false; }
+    if (formData.price <= 0) { toast.error("Price must be greater than 0"); return false; }
+    return true;
   }
 
   const handleCategoryChange = (value: CategoryKey) => {
@@ -113,38 +105,45 @@ export default function ProductsPage() {
   }
 
   const handleAdd = async () => {
+    if (!validateForm()) return
     const { error } = await supabase.from('products').insert([{ ...formData, is_active: true }])
     if (!error) {
+      toast.success(`${formData.name} added to catalog`)
       setAddDialog(false)
       fetchProducts()
-    } else alert('Error adding product')
+    } else toast.error("Failed to add product")
   }
 
   const handleEdit = async () => {
-    if (!selectedProduct) return
+    if (!selectedProduct || !validateForm()) return
     const { error } = await supabase
       .from('products')
       .update({ ...formData })
       .eq('id', selectedProduct.id)
 
     if (!error) {
+      toast.success("Changes saved successfully")
       setEditDialog(false)
       fetchProducts()
-    } else alert('Error updating product')
+    } else toast.error("Failed to update product")
   }
 
   const handleDelete = async () => {
     if (!selectedProduct) return
     const { error } = await supabase.from('products').delete().eq('id', selectedProduct.id)
     if (!error) {
+      toast.success("Product deleted permanently")
       setDeleteDialog(false)
       fetchProducts()
-    }
+    } else toast.error("Delete failed")
   }
 
   const toggleActive = async (id: string, currentStatus: boolean) => {
-    await supabase.from('products').update({ is_active: !currentStatus }).eq('id', id)
-    fetchProducts()
+    const { error } = await supabase.from('products').update({ is_active: !currentStatus }).eq('id', id)
+    if (!error) {
+      toast.info(currentStatus ? "Product hidden from site" : "Product is now live")
+      fetchProducts()
+    }
   }
 
   if (loading) {
@@ -239,7 +238,7 @@ export default function ProductsPage() {
                     <Switch
                       checked={product.is_active}
                       onCheckedChange={() => toggleActive(product.id, product.is_active)}
-                      className="data-[state=checked]:bg-green-500"
+                      className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-red-600"
                     />
                   </td>
                   <td className="p-5 text-right">
@@ -272,8 +271,7 @@ export default function ProductsPage() {
           </div>
 
           <div className="p-8 space-y-8">
-            {/* Step 1: Side-by-Side Dropdowns */}
-            <div className="grid grid-cols-1  md:grid-cols-2 gap-8 p-6 bg-gray-50 rounded-2xl border border-gray-100">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 bg-gray-50 rounded-2xl border border-gray-100">
               <div className="space-y-3">
                 <Label className="text-xs font-black text-red-800 uppercase tracking-widest">1. Select Category</Label>
                 <Select onValueChange={handleCategoryChange} value={formData.category}>
@@ -295,12 +293,10 @@ export default function ProductsPage() {
                   value={formData.name}
                   disabled={!formData.category}
                 >
-                  {/* ADD bg-white HERE */}
                   <SelectTrigger className={`h-14 bg-white opacity-100 border-2 text-lg font-medium transition-all ${formData.category ? 'border-red-200 ring-2 ring-red-50' : 'border-gray-100 opacity-60'}`}>
                     <SelectValue placeholder={formData.category ? "Select Model" : "← Pick size first"} />
                   </SelectTrigger>
 
-                  {/* ALSO ensure the Content has bg-white */}
                   <SelectContent className="bg-white opacity-100 border border-gray-200 shadow-2xl z-[100]">
                     {formData.category && PRODUCT_MAPPING[formData.category as CategoryKey].models.map((model) => (
                       <SelectItem key={model} value={model} className="text-lg py-3 hover:bg-gray-100 focus:bg-gray-100">
@@ -312,7 +308,6 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            {/* Step 2: Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <Label className="text-sm font-bold text-gray-700">Price (৳)</Label>

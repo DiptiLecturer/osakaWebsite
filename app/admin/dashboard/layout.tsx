@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { Toaster } from "@/components/ui/sonner" // 1. Import the Toaster
 
 export default function DashboardLayout({
   children,
@@ -28,6 +29,23 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* 2. Add Toaster here so it's available globally in the dashboard */}
+      <Toaster
+        position="bottom-center"
+        expand={true}
+        richColors
+        toastOptions={{
+          style: {
+            width: '100vw',        // Makes the toast container full width
+            borderRadius: '2px',   // Removes rounded corners for a bar look
+            bottom: '0px',         // Sticks it to the very bottom
+            left: '0px',
+            margin: '0px',
+          },
+          className: "flex justify-center text-lg py-6 font-bold" // Centers text and makes it bigger
+        }}
+      />
+
       {/* Top Navigation */}
       <nav className="bg-gradient-to-r from-black to-red-900 text-white shadow-2xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -39,44 +57,40 @@ export default function DashboardLayout({
                   OSAKA <span className="text-red-400">Admin</span>
                 </h1>
               </Link>
-              
+
               <div className="hidden md:flex space-x-1">
                 <Link href="/admin/dashboard">
-                  <div className={`px-4 py-2 rounded-lg transition font-semibold ${
-                    isActive('/admin/dashboard') 
-                      ? 'bg-white text-red-600' 
+                  <div className={`px-4 py-2 rounded-lg transition font-semibold ${isActive('/admin/dashboard')
+                      ? 'bg-white text-red-600'
                       : 'text-white hover:bg-red-800'
-                  }`}>
+                    }`}>
                     🏠 Dashboard
                   </div>
                 </Link>
-                
+
                 <Link href="/admin/dashboard/products">
-                  <div className={`px-4 py-2 rounded-lg transition font-semibold ${
-                    pathname?.includes('/products')
-                      ? 'bg-white text-red-600' 
+                  <div className={`px-4 py-2 rounded-lg transition font-semibold ${pathname?.includes('/products')
+                      ? 'bg-white text-red-600'
                       : 'text-white hover:bg-red-800'
-                  }`}>
+                    }`}>
                     📺 Products
                   </div>
                 </Link>
-                
+
                 <Link href="/admin/dashboard/gallery">
-                  <div className={`px-4 py-2 rounded-lg transition font-semibold ${
-                    pathname?.includes('/gallery')
-                      ? 'bg-white text-red-600' 
+                  <div className={`px-4 py-2 rounded-lg transition font-semibold ${pathname?.includes('/gallery')
+                      ? 'bg-white text-red-600'
                       : 'text-white hover:bg-red-800'
-                  }`}>
+                    }`}>
                     🖼️ Gallery
                   </div>
                 </Link>
-                
+
                 <Link href="/admin/dashboard/messages">
-                  <div className={`px-4 py-2 rounded-lg transition font-semibold ${
-                    pathname?.includes('/messages')
-                      ? 'bg-white text-red-600' 
+                  <div className={`px-4 py-2 rounded-lg transition font-semibold ${pathname?.includes('/messages')
+                      ? 'bg-white text-red-600'
                       : 'text-white hover:bg-red-800'
-                  }`}>
+                    }`}>
                     💬 Messages
                   </div>
                 </Link>
@@ -85,8 +99,8 @@ export default function DashboardLayout({
 
             {/* Right Side Actions */}
             <div className="flex items-center space-x-4">
-              <Link 
-                href="/" 
+              <Link
+                href="/"
                 target="_blank"
                 className="text-sm bg-red-800 hover:bg-red-700 px-4 py-2 rounded-lg transition font-semibold"
               >

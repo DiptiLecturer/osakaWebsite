@@ -46,3 +46,14 @@
     --ring: 212.7 26.8% 83.9%;
   }
 }
+/* Enable smooth scrolling for the whole page */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Prevents the fixed Navbar from covering section titles.
+   We apply it to all sections with an ID.
+*/
+section[id] {
+  scroll-margin-top: 70px;
+}
