@@ -8,10 +8,18 @@ export default function TVCard({ name, price, image }: TVCardProps) {
   return (
     <div className="border border-gray-300 rounded-lg overflow-hidden hover:shadow-2xl transition-all duration-300 bg-white">
       {/* TV Image */}
-      <div className="bg-gray-100 h-48 flex items-center justify-center p-4">
-        <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center">
-          <p className="text-gray-400 text-sm">{name} Image</p>
-        </div>
+      <div className="bg-gray-100 h-48 flex items-center justify-center p-4 overflow-hidden">
+        {image ? (
+          <img 
+            src={image} 
+            alt={name}
+            className="w-full h-full object-contain"
+          />
+        ) : (
+          <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center">
+            <p className="text-gray-400 text-sm">No Image</p>
+          </div>
+        )}
       </div>
       
       {/* TV Details */}

@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Edit2, Trash2, Package, ShieldCheck, ShieldAlert, Plus } from 'lucide-react'
+import { Edit2, Trash2, Package, ShieldCheck, ShieldAlert, Plus, Upload, X, Loader2, ImageIcon } from 'lucide-react'
 
 const PRODUCT_MAPPING = {
   "24 inch": { size: "24\"", models: ["Basic Frameless", "Basic Double Glass", "Smart Frameless", "Smart Double Glass"] },
@@ -43,17 +43,20 @@ interface Product {
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+  const [isUploading, setIsUploading] = useState(false)
   const [editDialog, setEditDialog] = useState(false)
   const [deleteDialog, setDeleteDialog] = useState(false)
   const [addDialog, setAddDialog] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [imagePreview, setImagePreview] = useState<string>('')
 
   const [formData, setFormData] = useState({
     name: '',
     category: '' as CategoryKey | '',
     size: '',
     price: 0,
-    description: ''
+    description: '',
+    image_url: ''
   })
 
   useEffect(() => {
@@ -87,8 +90,63 @@ export default function ProductsPage() {
     })
   }
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please upload an image file")
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size should be less than 5MB")
+      return
+    }
+
+    setIsUploading(true)
+    try {
+      // Create unique filename
+      const fileExt = file.name.split('.').pop()
+      const fileName = `product-${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
+      const filePath = `${fileName}`
+
+      // Upload to Supabase Storage
+      const { data, error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        })
+
+      if (uploadError) throw uploadError
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath)
+
+      setFormData({ ...formData, image_url: publicUrl })
+      setImagePreview(publicUrl)
+      toast.success("Image uploaded successfully!")
+    } catch (err: any) {
+      console.error("Upload Error:", err)
+      toast.error(err.message || "Failed to upload image")
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleRemoveImage = () => {
+    setFormData({ ...formData, image_url: '' })
+    setImagePreview('')
+  }
+
   const openAddDialog = () => {
-    setFormData({ name: '', category: '', size: '', price: 0, description: '' })
+    setFormData({ name: '', category: '', size: '', price: 0, description: '', image_url: '' })
+    setImagePreview('')
     setAddDialog(true)
   }
 
@@ -99,8 +157,10 @@ export default function ProductsPage() {
       category: product.category as CategoryKey,
       size: product.size,
       price: product.price,
-      description: product.description || ''
+      description: product.description || '',
+      image_url: product.image_url || ''
     })
+    setImagePreview(product.image_url || '')
     setEditDialog(true)
   }
 
@@ -207,6 +267,7 @@ export default function ProductsPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50/50 border-b border-gray-200">
+                <th className="p-5 font-bold text-gray-600">Image</th>
                 <th className="p-5 font-bold text-gray-600">Product Details</th>
                 <th className="p-5 font-bold text-gray-600">Category & Size</th>
                 <th className="p-5 font-bold text-gray-600">Price</th>
@@ -217,6 +278,19 @@ export default function ProductsPage() {
             <tbody>
               {products.map((product) => (
                 <tr key={product.id} className="border-b border-gray-100 hover:bg-red-50/30 transition-colors">
+                  <td className="p-5">
+                    <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                      {product.image_url ? (
+                        <img 
+                          src={product.image_url} 
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <ImageIcon className="w-8 h-8 text-gray-300" />
+                      )}
+                    </div>
+                  </td>
                   <td className="p-5">
                     <div className="font-bold text-gray-900 text-lg">{product.name}</div>
                     <div className="text-sm text-gray-500 line-clamp-1">{product.description}</div>
@@ -260,7 +334,7 @@ export default function ProductsPage() {
 
       {/* Add/Edit Product Dialog */}
       <Dialog open={addDialog || editDialog} onOpenChange={(open) => { if (!open) { setAddDialog(false); setEditDialog(false); } }}>
-        <DialogContent className="max-w-3xl bg-white p-0 overflow-hidden border-none shadow-2xl">
+        <DialogContent className="max-w-3xl bg-white p-0 overflow-hidden border-none shadow-2xl max-h-[90vh] overflow-y-auto">
           <div className="bg-gradient-to-r from-black to-red-900 p-8">
             <DialogTitle className="text-3xl font-black text-white">
               {addDialog ? "Create New Listing" : "Update Product Info"}
@@ -271,6 +345,76 @@ export default function ProductsPage() {
           </div>
 
           <div className="p-8 space-y-8">
+            {/* Product Image Upload Section */}
+            <div className="space-y-3">
+              <Label className="text-sm font-bold text-gray-700">Product Image</Label>
+              
+              {!imagePreview ? (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-red-500 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    id="product-image-upload"
+                    disabled={isUploading}
+                  />
+                  <label
+                    htmlFor="product-image-upload"
+                    className="cursor-pointer flex flex-col items-center gap-3"
+                  >
+                    {isUploading ? (
+                      <>
+                        <Loader2 className="h-12 w-12 animate-spin text-red-600" />
+                        <p className="text-sm text-gray-600 font-medium">Uploading image...</p>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-12 w-12 text-gray-400" />
+                        <div>
+                          <p className="text-sm font-semibold text-gray-700">Click to upload product image</p>
+                          <p className="text-xs text-gray-500 mt-1">PNG, JPG, WEBP (max 5MB)</p>
+                        </div>
+                      </>
+                    )}
+                  </label>
+                </div>
+              ) : (
+                <div className="relative border-2 border-gray-300 rounded-lg overflow-hidden">
+                  <img
+                    src={imagePreview}
+                    alt="Product preview"
+                    className="w-full h-64 object-contain bg-gray-50"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleRemoveImage}
+                    className="absolute top-2 right-2"
+                  >
+                    <X className="h-4 w-4 mr-1" /> Remove
+                  </Button>
+                </div>
+              )}
+
+              {/* Manual URL Input (Optional) */}
+              <details className="mt-2">
+                <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+                  Or paste image URL manually
+                </summary>
+                <Input 
+                  value={formData.image_url} 
+                  onChange={e => {
+                    setFormData({...formData, image_url: e.target.value})
+                    setImagePreview(e.target.value)
+                  }} 
+                  placeholder="https://supabase-url.com/product.jpg"
+                  className="mt-2 h-10 border text-xs"
+                />
+              </details>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 bg-gray-50 rounded-2xl border border-gray-100">
               <div className="space-y-3">
                 <Label className="text-xs font-black text-red-800 uppercase tracking-widest">1. Select Category</Label>
@@ -356,6 +500,7 @@ export default function ProductsPage() {
             </Button>
             <Button
               onClick={addDialog ? handleAdd : handleEdit}
+              disabled={isUploading}
               className="bg-red-700 hover:bg-red-800 text-white px-12 h-14 font-black text-lg shadow-lg rounded-xl flex-1 sm:flex-none"
             >
               {addDialog ? "Save & Publish" : "Apply Changes"}

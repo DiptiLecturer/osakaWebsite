@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Toaster } from "@/components/ui/sonner" // 1. Import the Toaster
+import { Toaster } from "@/components/ui/sonner"
 
 export default function DashboardLayout({
   children,
@@ -29,20 +29,19 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* 2. Add Toaster here so it's available globally in the dashboard */}
       <Toaster
         position="bottom-center"
         expand={true}
         richColors
         toastOptions={{
           style: {
-            width: '100vw',        // Makes the toast container full width
-            borderRadius: '2px',   // Removes rounded corners for a bar look
-            bottom: '0px',         // Sticks it to the very bottom
+            width: '100vw',
+            borderRadius: '2px',
+            bottom: '0px',
             left: '0px',
             margin: '0px',
           },
-          className: "flex justify-center text-lg py-6 font-bold" // Centers text and makes it bigger
+          className: "flex justify-center text-lg py-6 font-bold"
         }}
       />
 
@@ -51,9 +50,9 @@ export default function DashboardLayout({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             {/* Logo & Links */}
-            <div className="flex items-center space-x-12">
+            <div className="flex items-center space-x-8">
               <Link href="/admin/dashboard">
-                <h1 className="text-3xl font-bold text-white hover:text-red-300 transition cursor-pointer">
+                <h1 className="text-3xl font-bold text-white hover:text-red-300 transition cursor-pointer mr-4">
                   OSAKA <span className="text-red-400">Admin</span>
                 </h1>
               </Link>
@@ -65,6 +64,16 @@ export default function DashboardLayout({
                       : 'text-white hover:bg-red-800'
                     }`}>
                     🏠 Dashboard
+                  </div>
+                </Link>
+
+                {/* NEW HERO BANNER LINK ADDED HERE */}
+                <Link href="/admin/dashboard/hero">
+                  <div className={`px-4 py-2 rounded-lg transition font-semibold ${pathname?.includes('/hero')
+                      ? 'bg-white text-red-600'
+                      : 'text-white hover:bg-red-800'
+                    }`}>
+                    ✨ Hero Banners
                   </div>
                 </Link>
 
@@ -102,7 +111,7 @@ export default function DashboardLayout({
               <Link
                 href="/"
                 target="_blank"
-                className="text-sm bg-red-800 hover:bg-red-700 px-4 py-2 rounded-lg transition font-semibold"
+                className="text-sm bg-red-800 hover:bg-red-700 px-4 py-2 rounded-lg transition font-semibold border border-red-400/30"
               >
                 🌐 View Site
               </Link>
